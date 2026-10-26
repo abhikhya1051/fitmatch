@@ -1,0 +1,24 @@
+{
+  "id": "asos",
+  "name": "ASOS Design",
+  "category": "mens-jeans",
+  "labelSystem": "us-waist",
+  "source": {
+    "url": "https://asos.com/us/discover/size-charts/men/jeans-pants/",
+    "type": "official",
+    "retrievedOn": "2026-10-26",
+    "notes": "Official ASOS own-brand 'to fit waist' chart. Single points per size; ranges derived from midpoints."
+  },
+  "sizes": [
+    { "label": "28", "waistCm": 71 },
+    { "label": "29", "waistCm": 73.5 },
+    { "label": "30", "waistCm": 76 },
+    { "label": "31", "waistCm": 78.5 },
+    { "label": "32", "waistCm": 81 },
+    { "label": "33", "waistCm": 83.5 },
+    { "label": "34", "waistCm": 86 },
+    { "label": "36", "waistCm": 91 },
+    { "label": "38", "waistCm": 96 },
+    { "label": "40", "waistCm": 101 }
+  ]
+}

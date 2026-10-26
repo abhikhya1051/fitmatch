@@ -1,0 +1,27 @@
+{
+  "id": "levis",
+  "name": "Levi's",
+  "category": "mens-jeans",
+  "labelSystem": "us-waist",
+  "source": {
+    "url": "https://www.levi.com/NL/en/info/sizechart",
+    "type": "official",
+    "retrievedOn": "2026-10-26",
+    "notes": "Official Levi's men's bottoms chart (body measurements). Published as single points per size; ranges are derived from midpoints between adjacent sizes."
+  },
+  "sizes": [
+    { "label": "27", "waistCm": 68.6, "hipCm": 85 },
+    { "label": "28", "waistCm": 71.1, "hipCm": 87.5 },
+    { "label": "29", "waistCm": 73.7, "hipCm": 90.2 },
+    { "label": "30", "waistCm": 76.2, "hipCm": 92.7 },
+    { "label": "31", "waistCm": 78.7, "hipCm": 95.3 },
+    { "label": "32", "waistCm": 81.3, "hipCm": 97.8 },
+    { "label": "33", "waistCm": 83.8, "hipCm": 100.3 },
+    { "label": "34", "waistCm": 86.4, "hipCm": 103 },
+    { "label": "35", "waistCm": 89, "hipCm": 105.5 },
+    { "label": "36", "waistCm": 91.4, "hipCm": 108 },
+    { "label": "38", "waistCm": 96.5, "hipCm": 113 },
+    { "label": "40", "waistCm": 101.6, "hipCm": 118 },
+    { "label": "42", "waistCm": 106.7, "hipCm": 123.2 }
+  ]
+}

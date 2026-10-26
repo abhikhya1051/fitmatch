@@ -1,0 +1,27 @@
+{
+  "id": "uniqlo",
+  "name": "Uniqlo",
+  "category": "mens-jeans",
+  "labelSystem": "us-waist",
+  "source": {
+    "url": "https://www.looksize.com/brand-size-chart/uniqlo",
+    "type": "third-party",
+    "retrievedOn": "2026-10-26",
+    "notes": "Uniqlo men's jeans chart as compiled by LookSize. Uniqlo publishes per-product charts only, so this should be verified against uniqlo.com product pages."
+  },
+  "sizes": [
+    { "label": "27", "waistCm": 68, "hipCm": 96.5 },
+    { "label": "28", "waistCm": 70, "hipCm": 99 },
+    { "label": "29", "waistCm": 73, "hipCm": 101.5 },
+    { "label": "30", "waistCm": 76, "hipCm": 104 },
+    { "label": "31", "waistCm": 79, "hipCm": 106.5 },
+    { "label": "32", "waistCm": 82, "hipCm": 109 },
+    { "label": "33", "waistCm": 84, "hipCm": 112 },
+    { "label": "34", "waistCm": 86.5, "hipCm": 115 },
+    { "label": "35", "waistCm": 88, "hipCm": 117.5 },
+    { "label": "36", "waistCm": 91, "hipCm": 120.5 },
+    { "label": "38", "waistCm": 95, "hipCm": 125 },
+    { "label": "40", "waistCm": 100, "hipCm": 130.5 },
+    { "label": "42", "waistCm": 106.5, "hipCm": 135 }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "id": "zara",
+  "name": "Zara",
+  "category": "mens-jeans",
+  "labelSystem": "eu",
+  "source": {
+    "url": "https://www.size.ly/size-chart/zara",
+    "type": "third-party",
+    "retrievedOn": "2026-10-26",
+    "notes": "Zara men's bottoms chart as compiled by Sizely from Zara's size guide. Zara labels men's jeans in EU sizes; the chart has small gaps between some sizes (e.g. 88-89 cm)."
+  },
+  "sizes": [
+    { "label": "44", "alias": "US 28", "waistCmMin": 71, "waistCmMax": 76 },
+    { "label": "46", "alias": "US 30", "waistCmMin": 76, "waistCmMax": 80 },
+    { "label": "48", "alias": "US 32", "waistCmMin": 80, "waistCmMax": 84 },
+    { "label": "50", "alias": "US 34", "waistCmMin": 84, "waistCmMax": 88 },
+    { "label": "52", "alias": "US 36", "waistCmMin": 89, "waistCmMax": 91 },
+    { "label": "54", "alias": "US 38", "waistCmMin": 95, "waistCmMax": 101 }
+  ]
+}

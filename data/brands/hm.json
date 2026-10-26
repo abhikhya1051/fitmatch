@@ -1,0 +1,26 @@
+{
+  "id": "hm",
+  "name": "H&M",
+  "category": "mens-jeans",
+  "labelSystem": "us-waist",
+  "source": {
+    "url": "https://size-charts.com/brands/hm-size-charts/hm-mens-sizes-chart-and-fitting-guide/",
+    "type": "third-party",
+    "retrievedOn": "2026-10-26",
+    "notes": "H&M men's jeans chart as compiled by Size-Charts.com (last updated Jan 2024). Note the waist ranges sit ~3 cm above Levi's for the same label."
+  },
+  "sizes": [
+    { "label": "27", "waistCmMin": 70, "waistCmMax": 73, "hipCmMin": 88, "hipCmMax": 90 },
+    { "label": "28", "waistCmMin": 73, "waistCmMax": 75, "hipCmMin": 90, "hipCmMax": 92 },
+    { "label": "29", "waistCmMin": 75, "waistCmMax": 78, "hipCmMin": 92, "hipCmMax": 94 },
+    { "label": "30", "waistCmMin": 78, "waistCmMax": 81, "hipCmMin": 94, "hipCmMax": 97 },
+    { "label": "31", "waistCmMin": 81, "waistCmMax": 84, "hipCmMin": 97, "hipCmMax": 99 },
+    { "label": "32", "waistCmMin": 84, "waistCmMax": 87, "hipCmMin": 99, "hipCmMax": 101 },
+    { "label": "33", "waistCmMin": 87, "waistCmMax": 89, "hipCmMin": 101, "hipCmMax": 103 },
+    { "label": "34", "waistCmMin": 89, "waistCmMax": 92, "hipCmMin": 103, "hipCmMax": 105 },
+    { "label": "36", "waistCmMin": 94, "waistCmMax": 98, "hipCmMin": 106, "hipCmMax": 109 },
+    { "label": "38", "waistCmMin": 100, "waistCmMax": 104, "hipCmMin": 110, "hipCmMax": 113 },
+    { "label": "40", "waistCmMin": 106, "waistCmMax": 110, "hipCmMin": 114, "hipCmMax": 117 },
+    { "label": "42", "waistCmMin": 112, "waistCmMax": 116, "hipCmMin": 118, "hipCmMax": 121 }
+  ]
+}
