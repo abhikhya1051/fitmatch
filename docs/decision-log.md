@@ -11,7 +11,7 @@ Product and technical decisions, the options considered, and why. Newest last.
 1. Ask an LLM "I'm a 32 in Levi's, what am I in Zara?" (fastest to build)
 2. Deterministic engine with the LLM for the fuzzy edges (chosen)
 
-**Why:** Option 1 answers confidently whether or not it knows the chart, and its answers can't be audited, tested, or calibrated. A sizing tool lives or dies on trust; one confident wrong answer costs a return and the user. Option 2 gives the same "AI" experience for the parts where language matters while keeping the answer reproducible. It also means 31 unit tests can pin the behaviour down.
+**Why:** Option 1 answers confidently whether or not it knows the chart, and its answers can't be audited, tested, or calibrated. A sizing tool lives or dies on trust; one confident wrong answer costs a return and the user. Option 2 gives the same "AI" experience for the parts where language matters while keeping the answer reproducible. It also means the unit tests can pin the behaviour down.
 **Trade-off:** Every brand chart must be curated by hand, which limits how fast we add brands.
 
 ---
@@ -67,3 +67,18 @@ Product and technical decisions, the options considered, and why. Newest last.
 **Decision:** Levi's and ASOS charts come from the brands' own size guides. Uniqlo, Zara, and H&M come from third-party compilations because the brands publish charts per product or behind dynamic pages. Each chart records its source and date; the UI warns when a target brand's chart is third-party, and the confidence score is slightly lower.
 **Why:** Waiting for perfect official data would block validation. Being transparent about the source keeps trust intact.
 **Next step:** Verify each third-party chart against 2–3 live product pages during research.
+
+---
+
+### D9. Voice input uses the browser's speech recognition, and feeds the same parser
+**Date:** 2026-10-26
+**Decision:** A mic button uses the browser's built-in Web Speech API. The transcript goes into the same text box and the same parser as typed input, and voice runs the recommendation automatically once the form is filled.
+**Options considered:**
+1. Browser Web Speech API (chosen)
+2. Record audio and send it to a hosted speech-to-text API
+**Why:** Option 1 needs no server, no audio storage, and no extra cost, which suits a v1 whose job is to test whether people want to *say* their sizes at all. Reusing the text parser means voice and typing can't drift apart, and every parser test covers both.
+**Consequences:**
+- Firefox has no implementation, so the mic button hides itself there; typing still works.
+- In Chrome, speech is processed by Google's servers. FitMatch never receives or stores audio, only the text transcript. This should be stated in a privacy note before public launch.
+- Voice transcripts have no punctuation and spell numbers out ("thirty two"), so the rule-based parser was rewritten to scan brand mentions and read the words around each one instead of splitting on commas.
+- Sizes that don't exist at a brand ("Zara 31": Zara uses EU 44–54) are reported back to the user rather than silently dropped or guessed.

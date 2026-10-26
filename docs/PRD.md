@@ -62,7 +62,7 @@ The user enters jeans they own (brand, size, and how they fit: too tight / fits 
 - **Their size at every supported brand**
 - **Feedback buttons:** "Would you buy this size?" and "Already bought it? It fit / Too small / Too big"
 
-They can also describe their jeans in free text ("Levi's 32 but a bit tight, Uniqlo 33 fits great") and have the form filled in.
+They can also describe their jeans in free text ("Levi's 32 but a bit tight, Uniqlo 33 fits great") or say it out loud ("I have Levi's 32 and Zara 48, what size at H&M? I'm looking for a relaxed fit"), and the form fills itself in.
 
 ### Where AI sits (and where it doesn't)
 
@@ -72,7 +72,7 @@ They can also describe their jeans in free text ("Levi's 32 but a bit tight, Uni
 | Estimating your waist | Deterministic interval math | Reproducible and testable |
 | Picking the size | Deterministic | An LLM guessing sizes is exactly the failure mode we're avoiding |
 | Confidence | Computed from the data, not the model | Has to be checkable against outcomes |
-| Free-text input | LLM parse, schema-validated, rule fallback | Fuzzy input is what models are good at |
+| Free-text and voice input | Browser speech-to-text, then LLM parse (schema-validated) with rule fallback | Fuzzy input is what models are good at |
 | Explanation | LLM rewrite of computed reasons, guarded | Friendlier copy, but can't change the facts |
 
 See `decision-log.md` (D1, D4) for the reasoning.
@@ -93,6 +93,7 @@ See `decision-log.md` (D1, D4) for the reasoning.
 | R10 | Calibration report from feedback | P1 | ✅ `npm run calibration` |
 | R11 | Show chart source and warn on third-party data | P1 | ✅ |
 | R12 | Durable hosted feedback storage | P1 | ⏳ Local file today; Supabase before public launch |
+| R13 | Voice input: speak your sizes, target brand, and fit preference in one sentence | P2 | ✅ Chrome, Edge, Safari (see D9) |
 
 ## 7. Success metrics
 
@@ -143,6 +144,7 @@ See `decision-log.md` (D1, D4) for the reasoning.
 
 ## 11. Open questions
 
+- Do people actually use voice, or is it a demo feature? Track the share of recommendations that start from the mic.
 - Do users trust a number more with or without seeing the underlying chart?
 - Is "medium confidence" actionable, or does it just cause anxiety? Would "order both and return one" guidance be more useful?
 - How much does fabric stretch shift the right answer, and can we capture it cheaply (a "stretch denim?" toggle)?

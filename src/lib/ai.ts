@@ -19,6 +19,8 @@ export const ParsedProfileSchema = z.object({
   knownFits: z.array(KnownFitSchema).max(5),
   targetBrandId: z.string().nullable().default(null),
   preference: FitPreferenceSchema.nullable().default(null),
+  /** Things we heard but couldn't use, phrased for the user ("Zara uses EU sizes…"). */
+  skipped: z.array(z.string()).default([]),
 });
 export type ParsedProfile = z.infer<typeof ParsedProfileSchema>;
 
@@ -58,16 +60,20 @@ async function callModel(system: string, user: string): Promise<string | null> {
 // Parsing
 // ---------------------------------------------------------------------------
 
-const BRAND_ALIASES: Record<string, RegExp> = {
-  levis: /\blevi'?s?\b|\blevi strauss\b/i,
-  uniqlo: /\buniqlo\b/i,
-  zara: /\bzara\b/i,
-  hm: /\bh\s?&\s?m\b|\bh and m\b|\bhm\b/i,
-  asos: /\basos\b/i,
-};
+const BRAND_PATTERNS: [string, string][] = [
+  ["levis", String.raw`levi'?s?|levi strauss`],
+  ["uniqlo", String.raw`uniqlo|uni qlo`],
+  ["zara", String.raw`zara`],
+  ["hm", String.raw`h\s?&\s?m|h and m|h n m|h & m|hm`],
+  ["asos", String.raw`asos|a sauce`],
+];
+const BRAND_RE = new RegExp(
+  BRAND_PATTERNS.map(([id, p]) => `(?<${id}>\\b(?:${p})\\b)`).join("|"),
+  "gi",
+);
 
-const TIGHT = /\b(tight|snug|small|squeez|digs?)\w*/i;
-const LOOSE = /\b(loose|baggy|big|roomy|gap(s|ping)?|falls? down)\w*/i;
+const TIGHT = /\b(tight|snug|small|squeez\w*|digs?)\b/i;
+const LOOSE = /\b(loose|baggy|big|roomy|gap(?:s|ping)?|falls? down)\b/i;
 
 function feelFrom(text: string): FitFeel | null {
   if (TIGHT.test(text)) return "tight";
@@ -75,58 +81,116 @@ function feelFrom(text: string): FitFeel | null {
   return null;
 }
 
-function brandIn(text: string): string | null {
-  for (const [id, re] of Object.entries(BRAND_ALIASES)) if (re.test(text)) return id;
-  return null;
+const UNITS: Record<string, number> = {
+  one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9,
+};
+const TENS: Record<string, number> = { twenty: 20, thirty: 30, forty: 40, fifty: 50 };
+
+/**
+ * Speech-to-text often gives "thirty two" or "thirty-two" instead of "32".
+ * Convert the waist-size range of number words to digits.
+ */
+export function numberWordsToDigits(text: string): string {
+  return text.replace(
+    /\b(twenty|thirty|forty|fifty)(?:[\s-](one|two|three|four|five|six|seven|eight|nine))?\b/gi,
+    (_, t: string, u?: string) => String(TENS[t.toLowerCase()] + (u ? UNITS[u.toLowerCase()] : 0)),
+  );
 }
 
-/** Deterministic parser: good enough for "Levi's 32, Uniqlo 31 (a bit tight), what's my Zara size?" */
-export function parseWithRules(text: string): ParsedProfile {
-  const chunks = text
-    .split(/[,;.\n]|\band\b|\balso\b/i)
-    .map((c) => c.trim())
-    .filter(Boolean);
+/** Words right before a brand that mean "this is the brand I'm shopping at". */
+const TARGET_CUE =
+  /(?:what|which)(?:'s| is)?(?: my)?(?: size)?(?: would i be| am i| should i (?:get|buy|order))?\s+(?:at|in|for|from|with)\s*$|\bsize\s+(?:at|in|for|with)\s*$|\b(?:get|buy|order|shop(?:ping)?|buying|ordering)\s+(?:at|from|in|on)\s*$|\b(?:at|in|for)\s*$/i;
+const QUESTION = /\b(what|which|how)\b|\?|\bshould i\b|\bsize at\b/i;
+
+const PREFERENCE_RE =
+  /\b(?:prefer|like|want|looking for|going for|after|need)\b[^.?!]{0,20}?\b(relaxed|loose|roomy|baggy|regular|normal|snug|slim|fitted|tight|skinny)\b|\b(relaxed|regular|snug|slim)\s+fit\b/gi;
+
+function preferenceFrom(word: string): ParsedProfile["preference"] {
+  const w = word.toLowerCase();
+  if (["relaxed", "loose", "roomy", "baggy"].includes(w)) return "relaxed";
+  if (["snug", "slim", "fitted", "tight", "skinny"].includes(w)) return "snug";
+  return "regular";
+}
+
+interface Mention {
+  brandId: string;
+  start: number;
+  end: number;
+}
+
+/**
+ * Deterministic parser. Scans for brand mentions, then reads the words around
+ * each one, so it copes with unpunctuated voice transcripts like
+ * "i have levis 32 and zara 48 what size at h and m i want a relaxed fit".
+ */
+export function parseWithRules(input: string): ParsedProfile {
+  let text = numberWordsToDigits(input).replace(/\s+/g, " ");
+  const skipped: string[] = [];
+
+  // 1. Fit preference ("looking for a relaxed fit"). Blank it out afterwards so
+  //    "relaxed"/"tight" here isn't mistaken for how a specific pair fits.
+  let preference: ParsedProfile["preference"] = null;
+  text = text.replace(PREFERENCE_RE, (m, a?: string, b?: string) => {
+    preference = preferenceFrom(a ?? b ?? "");
+    return " ".repeat(m.length);
+  });
+
+  // 2. Brand mentions, in order.
+  const mentions: Mention[] = [];
+  for (const m of text.matchAll(BRAND_RE)) {
+    const brandId = Object.entries(m.groups ?? {}).find(([, v]) => v)?.[0];
+    if (brandId) mentions.push({ brandId, start: m.index!, end: m.index! + m[0].length });
+  }
 
   const knownFits: KnownFit[] = [];
   let targetBrandId: string | null = null;
-  let preference: ParsedProfile["preference"] = null;
 
-  for (const chunk of chunks) {
-    const brandId = brandIn(chunk);
-    const sizeMatch = chunk.match(/\b(?:eu\s*|w\s*)?(\d{2})\b/i);
-    const asksAbout = /\b(what|which|at|in|for)\b.*\?|\bwhat size\b|\bshould i (get|buy)\b/i.test(chunk);
+  mentions.forEach((m, i) => {
+    const prevEnd = i > 0 ? mentions[i - 1].end : 0;
+    const nextStart = i < mentions.length - 1 ? mentions[i + 1].start : text.length;
+    const before = text.slice(prevEnd, m.start);
+    let after = text.slice(m.end, nextStart);
+    // Stop reading "after" at the start of a question about another brand.
+    const q = after.search(/\b(what|which)\b|\?/i);
+    if (q >= 0) after = after.slice(0, q);
 
-    if (/\b(prefer|like)\b.*\b(relaxed|loose|roomy)\b/i.test(chunk)) preference = "relaxed";
-    else if (/\b(prefer|like)\b.*\b(snug|slim|tight|fitted)\b/i.test(chunk)) preference = "snug";
+    const brand = getBrand(m.brandId)!;
+    const sizeAfter = after.match(/^\D{0,12}?\b(?:eu\s*|us\s*|w\s*|size\s*|in\s*(?:a\s*)?)?(\d{2})\b/i);
+    const sizeBefore = before.match(/\b(\d{2})\s*(?:in|at|from|with|for)\s*(?:my\s*)?$/i);
+    // "a 32 at Levi's" beats a number that follows, which may belong to the next brand.
+    const raw = sizeBefore?.[1] ?? sizeAfter?.[1];
 
-    if (brandId && sizeMatch && !asksAbout) {
-      const brand = getBrand(brandId)!;
-      if (findSize(brand, sizeMatch[0])) {
-        knownFits.push({ brandId, size: findSize(brand, sizeMatch[0])!.label, feel: feelFrom(chunk) ?? "good" });
-        continue;
-      }
+    const isTarget = !raw && (TARGET_CUE.test(before) || QUESTION.test(before.slice(-40)));
+    if (isTarget || (!raw && i === mentions.length - 1 && QUESTION.test(text))) {
+      targetBrandId = m.brandId;
+      return;
     }
-    if (brandId && (asksAbout || !sizeMatch)) {
-      targetBrandId = brandId;
-      continue;
-    }
-    // A feel word with no brand describes the previous fit ("Levi's 32, a bit tight").
-    const feel = feelFrom(chunk);
-    if (!brandId && feel && knownFits.length && !/\bprefer|like\b/i.test(chunk)) {
-      knownFits[knownFits.length - 1].feel = feel;
-    }
-  }
+    if (!raw) return;
 
-  return { knownFits: knownFits.slice(0, 5), targetBrandId, preference };
+    const size = findSize(brand, raw);
+    if (!size) {
+      skipped.push(
+        brand.labelSystem === "eu"
+          ? `${brand.name} uses EU sizes (${brand.sizes[0].label}–${brand.sizes[brand.sizes.length - 1].label}), so we couldn't use "${brand.name} ${raw}". Check the label for the EU number.`
+          : `${brand.name} doesn't make a ${raw} in our chart (${brand.sizes[0].label}–${brand.sizes[brand.sizes.length - 1].label}).`,
+      );
+      return;
+    }
+    if (knownFits.some((f) => f.brandId === m.brandId && f.size === size.label)) return;
+    knownFits.push({ brandId: m.brandId, size: size.label, feel: feelFrom(after) ?? "good" });
+  });
+
+  return { knownFits: knownFits.slice(0, 5), targetBrandId, preference, skipped };
 }
 
 const PARSE_SYSTEM = `You extract men's jeans sizing info from a shopper's message.
 Known brands (use these ids only): ${BRANDS.map((b) => `${b.id} = ${b.name} (sizes: ${b.sizes.map((s) => s.label).join(", ")})`).join("; ")}.
-Return ONLY JSON: {"knownFits":[{"brandId":string,"size":string,"feel":"good"|"tight"|"loose"}],"targetBrandId":string|null,"preference":"snug"|"regular"|"relaxed"|null}
+Return ONLY JSON: {"knownFits":[{"brandId":string,"size":string,"feel":"good"|"tight"|"loose"}],"targetBrandId":string|null,"preference":"snug"|"regular"|"relaxed"|null,"skipped":string[]}
 - knownFits: sizes the shopper already owns, with how they fit. "feel" is "good" unless they say tight/small or loose/big.
 - targetBrandId: the brand they want a size for, if any.
 - preference: only if they state how they like jeans to fit overall.
-- Skip brands or sizes not in the list. Never guess a size they didn't state.`;
+- The text may be an unpunctuated voice transcript; numbers may be spelled out.
+- If a size isn't in a brand's list, leave it out of knownFits and add a short plain-English note to "skipped" (e.g. Zara uses EU sizes). Never convert or guess a size they didn't state.`;
 
 export async function parseProfile(text: string): Promise<AiResult<ParsedProfile>> {
   const raw = await callModel(PARSE_SYSTEM, text.slice(0, 1000));
@@ -137,7 +201,9 @@ export async function parseProfile(text: string): Promise<AiResult<ParsedProfile
       // Drop anything that doesn't exist in our charts: the model doesn't get to invent sizes.
       parsed.knownFits = parsed.knownFits.filter((f) => {
         const b = getBrand(f.brandId);
-        return b && findSize(b, f.size);
+        const ok = Boolean(b && findSize(b, f.size));
+        if (!ok && b) parsed.skipped.push(`We couldn't find ${b.name} ${f.size} in our chart.`);
+        return ok;
       });
       if (parsed.targetBrandId && !getBrand(parsed.targetBrandId)) parsed.targetBrandId = null;
       return { value: parsed, via: "model" };

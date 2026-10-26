@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { Recommendation } from "@/lib/engine";
 import type { FitFeel, FitPreference, KnownFit } from "@/lib/schema";
+import { useVoiceInput } from "./useVoiceInput";
 
 export interface BrandOption {
   id: string;
@@ -69,26 +70,36 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
     );
   }
 
-  async function fillFromText() {
-    if (freeText.trim().length < 3) return;
+  /** Parse free text into the form. Voice input also runs the recommendation straight away. */
+  async function fillFromText(text = freeText, runAfter = false) {
+    if (text.trim().length < 3) return;
     setLoading("parse");
     setParseNote(null);
     try {
       const res = await fetch("/api/parse", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ text: freeText }),
+        body: JSON.stringify({ text }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      if (data.knownFits.length) setFits(data.knownFits);
-      if (data.targetBrandId) setTarget(data.targetBrandId);
-      if (data.preference) setPreference(data.preference);
-      setParseNote(
+      const nextFits: KnownFit[] = data.knownFits.length ? data.knownFits : fits;
+      const nextTarget: string = data.targetBrandId ?? target;
+      const nextPref: FitPreference = data.preference ?? preference;
+      setFits(nextFits);
+      setTarget(nextTarget);
+      setPreference(nextPref);
+      const notes = [
         data.knownFits.length
-          ? `Filled in ${data.knownFits.length} pair${data.knownFits.length > 1 ? "s" : ""}. Check them below.`
-          : "We couldn't spot a brand and size we know. Try something like “Levi's 32, a bit tight”.",
-      );
+          ? `Filled in ${data.knownFits.length} pair${data.knownFits.length > 1 ? "s" : ""}${data.targetBrandId ? ` and ${brandById.get(data.targetBrandId)?.name} as the brand you're shopping` : ""}${data.preference ? `, ${data.preference} fit` : ""}. Check them below.`
+          : "We couldn't spot a brand and size we know. Try something like \u201cLevi's 32, a bit tight\u201d.",
+        ...(data.skipped ?? []),
+      ];
+      setParseNote(notes.join(" "));
+      if (runAfter && data.knownFits.length) {
+        setLoading(null);
+        await findSize({ fits: nextFits, target: nextTarget, preference: nextPref });
+      }
     } catch (e) {
       setParseNote(e instanceof Error ? e.message : "Something went wrong.");
     } finally {
@@ -96,7 +107,18 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
     }
   }
 
-  async function findSize() {
+  const voice = useVoiceInput({
+    onInterim: (t) => setFreeText(t),
+    onFinal: (t) => {
+      setFreeText(t);
+      void fillFromText(t, true);
+    },
+  });
+
+  async function findSize(
+    override?: { fits: KnownFit[]; target: string; preference: FitPreference },
+  ) {
+    const input = override ?? { fits, target, preference };
     setLoading("recommend");
     setError(null);
     setFeedbackSent(null);
@@ -104,7 +126,11 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
       const res = await fetch("/api/recommend", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ knownFits: fits, targetBrandId: target, preference }),
+        body: JSON.stringify({
+          knownFits: input.fits,
+          targetBrandId: input.target,
+          preference: input.preference,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -146,21 +172,48 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
 
         <div className="freetext">
           <label htmlFor="freetext" className="label">
-            Describe them <span className="muted">(optional)</span>
+            Describe them or say it <span className="muted">(optional)</span>
           </label>
           <div className="freetext-row">
             <input
               id="freetext"
               type="text"
-              placeholder="e.g. Levi's 32 but a bit tight, Uniqlo 31 fits great"
+              placeholder={
+                voice.status === "listening"
+                  ? "Listening…"
+                  : "e.g. Levi's 32, a bit tight. What size at H&M? Relaxed fit."
+              }
               value={freeText}
               onChange={(e) => setFreeText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && fillFromText()}
             />
-            <button type="button" className="btn ghost" onClick={fillFromText} disabled={loading !== null}>
+            {voice.status !== "unsupported" && (
+              <button
+                type="button"
+                className={`btn mic ${voice.status === "listening" ? "live" : ""}`}
+                onClick={voice.status === "listening" ? voice.stop : voice.start}
+                disabled={loading !== null}
+                aria-pressed={voice.status === "listening"}
+                aria-label={voice.status === "listening" ? "Stop listening" : "Speak instead of typing"}
+              >
+                <MicIcon />
+                <span>{voice.status === "listening" ? "Stop" : "Speak"}</span>
+              </button>
+            )}
+            <button type="button" className="btn ghost" onClick={() => fillFromText()} disabled={loading !== null}>
               {loading === "parse" ? "Reading…" : "Fill in"}
             </button>
           </div>
+          {voice.status === "listening" && (
+            <p className="note listening" role="status">
+              Listening. Try: “I have Levi's 32 and Zara 48, what size at H&M? I'm looking for a relaxed fit.”
+            </p>
+          )}
+          {voice.error && (
+            <p className="note warn" role="alert">
+              {voice.error}
+            </p>
+          )}
           {parseNote && <p className="note">{parseNote}</p>}
         </div>
 
@@ -262,7 +315,7 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
           ))}
         </fieldset>
 
-        <button type="button" className="btn primary" onClick={findSize} disabled={loading !== null}>
+        <button type="button" className="btn primary" onClick={() => findSize()} disabled={loading !== null}>
           {loading === "recommend" ? "Reading size charts…" : `Find my ${brandById.get(target)?.name} size`}
         </button>
         {error && (
@@ -394,5 +447,19 @@ export default function SizeFinder({ brands }: { brands: BrandOption[] }) {
         )}
       </section>
     </div>
+  );
+}
+
+function MicIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="3" width="6" height="11" rx="3" fill="currentColor" />
+      <path
+        d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+    </svg>
   );
 }

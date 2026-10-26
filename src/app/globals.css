@@ -584,9 +584,50 @@ tr.current td {
     grid-template-columns: 1fr;
   }
   .freetext-row {
-    flex-direction: column;
+    flex-wrap: wrap;
+  }
+  .freetext-row input {
+    flex: 1 0 100%;
+  }
+  .freetext-row .btn {
+    flex: 1;
+    justify-content: center;
   }
   .size {
     font-size: 68px;
   }
 }
+
+/* Voice input ------------------------------------------------------------- */
+
+.btn.mic {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.btn.mic:hover {
+  border-color: var(--denim);
+}
+
+.btn.mic.live {
+  border-color: var(--rivet);
+  background: var(--rivet);
+  color: var(--surface);
+  animation: mic-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes mic-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--rivet) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--rivet) 0%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.mic.live { animation: none; }
+}
+
+.note.listening { color: var(--rivet); }
+.note.warn { color: var(--low); }

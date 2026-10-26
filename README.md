@@ -17,6 +17,7 @@ Jeans sizes look standardized but aren't. The number on the label is a brand's c
 ## What it does
 
 - **Tell it what fits:** brand, size, and whether they're too tight, just right, or too loose. Or just type it: *"Levi's 32 but a bit tight, Uniqlo 33 fits great"*.
+- **Or say it.** Tap the mic and say *"I have Levi's 32 and Zara 48, what size at H&M? I'm looking for a relaxed fit"*. The form fills itself and the answer appears. If you name a size a brand doesn't make (Zara uses EU sizes), it tells you instead of guessing. ([D9](docs/decision-log.md#d9-voice-input-uses-the-browsers-speech-recognition-and-feeds-the-same-parser))
 - **Pick a brand and a fit preference** (snug, regular, relaxed).
 - **Get a size, a confidence level, and the reasoning**, including "same label doesn't mean same fit" and a between-sizes suggestion when you're near an edge.
 - **See your size at every supported brand.**
@@ -32,6 +33,7 @@ Supported: Levi's, ASOS Design, Uniqlo, Zara, H&M (men's jeans).
 |---|---|
 | Size charts | Curated JSON, schema-validated |
 | Estimating your waist, picking the size, scoring confidence | Deterministic engine |
+| Hearing you | Browser speech recognition (Chrome, Edge, Safari) |
 | Understanding "Levi's 32, a bit tight" | LLM (rule-based fallback) |
 | Writing the explanation | LLM, checked by a faithfulness guardrail (rule-based fallback) |
 
@@ -46,6 +48,7 @@ Supported: Levi's, ASOS Design, Uniqlo, Zara, H&M (men's jeans).
 ```mermaid
 flowchart LR
     A["Jeans you own<br/>(brand, size, feel)"] --> B["Implied waist range<br/>per pair"]
+    V["Voice"] -- "speech to text" --> T
     T["Free text"] -. "LLM parse<br/>(validated)" .-> A
     B --> C{"Do they<br/>overlap?"}
     C -- yes --> D["Estimated waist"]
@@ -77,7 +80,7 @@ v1 is built; user validation is next. The plan (in the [PRD](docs/PRD.md#9-valid
 ```bash
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 31 tests: engine, parser, guardrail, calibration
+npm test             # 35 tests: engine, parser (incl. voice transcripts), guardrail, calibration
 npm run typecheck
 npm run calibration  # report from .data/feedback.jsonl
 ```
@@ -93,7 +96,7 @@ src/lib/charts.ts     Loads and normalizes charts (points -> ranges)
 src/lib/engine.ts     Waist estimation, size matching, confidence
 src/lib/ai.ts         Free-text parsing + explanation, with fallbacks and guardrail
 src/lib/feedback.ts   Feedback storage + calibration
-src/app/              Next.js UI and API routes
+src/app/              Next.js UI, voice input hook, API routes
 scripts/              Calibration report
 tests/                Vitest suites
 docs/                 PRD, decision log, data sources
