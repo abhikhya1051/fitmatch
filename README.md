@@ -4,7 +4,9 @@
 
 A 32 at Levi's is a 31 at H&M and a 48 at Zara. FitMatch reads each brand's size chart, works out where your waist actually sits from the jeans that fit you today, and tells you what to order elsewhere, with a confidence level that's designed to be checked against real outcomes.
 
-![FitMatch recommending H&M 31 from a Levi's 32 (a bit tight) and a Uniqlo 33](docs/screenshots/desktop.png)
+[![Watch the narrated FitMatch demo](docs/demo/demo-poster.png)](docs/demo/fitmatch-demo.mp4)
+
+*1:38 narrated walkthrough, including voice input. [Download the video](docs/demo/fitmatch-demo.mp4) · [captions](docs/demo/fitmatch-demo.srt). Narration is AI-generated.*
 
 > **Portfolio note:** I built this as a product case study. The interesting parts are the product decisions, not the code: [PRD](docs/PRD.md) · [Decision log](docs/decision-log.md) · [Data sources](docs/data-sources.md)
 
@@ -99,7 +101,7 @@ src/lib/feedback.ts   Feedback storage + calibration
 src/app/              Next.js UI, voice input hook, API routes
 scripts/              Calibration report
 tests/                Vitest suites
-docs/                 PRD, decision log, data sources
+docs/                 PRD, decision log, data sources, demo video
 ```
 
 ## What's next

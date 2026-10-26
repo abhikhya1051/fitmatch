@@ -1,0 +1,43 @@
+1
+00:00:00,402 --> 00:00:08,019
+This is FitMatch, a product I built to answer one question: what size jeans should I order at a brand I've never worn?
+
+2
+00:00:08,170 --> 00:00:19,499
+Jeans sizes look standard, but they aren't. A 32 at Levi's is cut for a different waist than a 32 at H&M, and Zara uses European sizes.
+
+3
+00:00:19,650 --> 00:00:27,971
+You start with jeans that already fit, like a Levi's 32. Pick the brand you're shopping at, and FitMatch reads both size charts.
+
+4
+00:00:28,121 --> 00:00:35,845
+At Zara, that's a 48. You also get a confidence level and the reasoning in plain English.
+
+5
+00:00:36,000 --> 00:00:45,367
+At H&M, the same Levi's 32 is a 31. Near the edge of a size, it suggests the neighbouring one and says when to pick it.
+
+6
+00:00:45,520 --> 00:00:57,191
+The size isn't picked by an AI model. Charts are data, the matching is plain math, and confidence comes from how cleanly the numbers line up.
+
+7
+00:00:57,344 --> 00:00:59,073
+You can also just say it.
+
+8
+00:00:59,222 --> 00:01:06,413
+“I have Levi's 32 and Zara 48. What size at H&M? I'm looking for a relaxed fit.”
+
+9
+00:01:06,564 --> 00:01:16,101
+It fills in both pairs and sets a relaxed fit. Because the two pairs agree, confidence rises from medium to high: H&M 31.
+
+10
+00:01:16,251 --> 00:01:23,740
+You see your size at every brand, and it asks whether you'd buy it, and later, whether it fit.
+
+11
+00:01:23,893 --> 00:01:36,097
+Success means sizes that fit, and high-confidence picks that fit more often than low-confidence ones. The PRD, decision log and code are in the repo.
