@@ -115,6 +115,10 @@ docs/                 PRD, decision log, data sources, demo video
 
 Brand-level charts only, waist only, and three of five charts come from third-party compilations (labelled in the app). Charts change; check the product page before you buy.
 
+## How this was built
+
+I built FitMatch with Claude, Anthropic's AI assistant, as a collaborator: it helped write the code, tests, docs, and the narrated demo video while I set the direction. The demo narration is AI-generated.
+
 ## License
 
 MIT
